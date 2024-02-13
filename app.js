@@ -6,109 +6,112 @@ let map;
 
 // This is the function that creates the map
 function initMap() {
-    const RED_ROUTE_COLOR = '#BE1E2D';
-    const BLUE_ROUTE_COLOR = '#0033CC';
-    const RED_ROUTE_ICON = 'http://framework.local/wp-content/uploads/2024/02/busRouteRed.svg';
-    const BLUE_ROUTE_ICON = 'http://framework.local/wp-content/uploads/2024/02/busRouteBlue.svg';
-    const SCHOOL_ICON = "http://framework.local/wp-content/uploads/2024/02/schoolPin.svg";
-    const MARKER_SIZE = new google.maps.Size(25, 25);
     const DEFAULT_ZOOM_LEVEL = 10;
 
     const zoom = Number(mapData.zoomLevel);
     const MAP_ZOOM_LEVEL = isNaN(zoom) ? DEFAULT_ZOOM_LEVEL : zoom;
 
-
-    let directionsService = new google.maps.DirectionsService();
     // Set the map center
     let center = new google.maps.LatLng(mapPosCenter.lat, mapPosCenter.lng);
-    let busRoute1 = new google.maps.LatLng(bsr1start.lat, bsr1start.lng);
-    let busRoute2 = new google.maps.LatLng(bsr2start.lat, bsr2start.lng);
-    // Set the bus route destination coordinates
-    let busRouteDestination1 = new google.maps.LatLng(bsr1finish.lat, bsr1finish.lng);
-    let busRouteDestination2 = new google.maps.LatLng(bsr2finish.lat, bsr2finish.lng);
     // Set the map options
     let mapOptions = {
         zoom: MAP_ZOOM_LEVEL,
         center: center
     }
-    console.log(mapOptions);
 
     // Create the map
     map = new google.maps.Map(document.getElementById('map'), mapOptions);
-    // Call the function to create the route
-    function calculateRoute(mapOrigin, mapDestination, color, waypoints, markerIconUrl) {
-        let request = {
-            origin: mapOrigin,
-            destination: mapDestination,
-            waypoints: waypoints,
-            travelMode: 'DRIVING',
-        };
-        // Call the directions service
-        directionsService.route(request, function (result, status) {
-            if (status == "OK") {
-                let directionsDisplay = new google.maps.DirectionsRenderer({
-                    map: map,
-                    suppressMarkers: true,
-                    polylineOptions: {
-                        strokeColor: color, // this is declared at the bottom
-                        strokeWeight: 4,
-                        strokeOpacity: 1
-                    },
-                    preserveViewport: true
-                });
-                directionsDisplay.setDirections(result);
-                // Starting location marker
-                var startMarker = new google.maps.Marker({
-                    position: result.routes[0].legs[0].start_location,
-                    map: map,
-                    icon: {
-                        url: markerIconUrl,
-                        scaledSize: MARKER_SIZE // sets size of marker
-                    },
-                });
 
-                // Waypoint Markers
-                var waypointMarkers = result.routes[0].legs.slice(0, -1).map(function (leg, index) {
-                    return new google.maps.Marker({
-                        position: leg.end_location,
-                        map: map,
-                        icon: {
-                            url: markerIconUrl,
-                            scaledSize: MARKER_SIZE // sets size of marker
-                        },
-                    });
-                });
-                // Final Destination Marker
-                var endMarker = new google.maps.Marker({
-                    position: result.routes[0].legs[result.routes[0].legs.length - 1].end_location,
-                    map: map,
-                    icon: {
-                        url: SCHOOL_ICON,
-                        scaledSize: MARKER_SIZE // sets size of marker
-                    },
-                });
-            }
+    // Iterate over the routes and create a route for each one
+    routesData.forEach(route => {
+        let start = new google.maps.LatLng(route.start.lat, route.start.lng);
+        let finish = new google.maps.LatLng(route.finish.lat, route.finish.lng);
+        let color = route.color;
+        let icon = route.icon;
+        let icon_start = route.icon_start;
+        let icon_finish = route.icon_finish;
+        let waypoints = route.stops.map(stop => {
+            return {
+                location: `${stop.lat}, ${stop.lng}`,
+                stopover: true
+            };
         });
-    }
-    // Red Route Waypoints
-    let waypoints = busRoute1Stops.map(stop => {
-        return {
-            location: `${stop.lat}, ${stop.lng}`,
-            stopover: true
-        };
-    });
-    // Blue Route Waypoints
-    let waypoints2 = busRoute2Stops.map(stop => {
-        return {
-            location: `${stop.lat}, ${stop.lng}`,
-            stopover: true
-        };
-    });
 
-    // Call the function for each route
-    calculateRoute(busRoute1, busRouteDestination1, RED_ROUTE_COLOR, waypoints, RED_ROUTE_ICON);
-    calculateRoute(busRoute2, busRouteDestination2, BLUE_ROUTE_COLOR, waypoints2, BLUE_ROUTE_ICON);
+        calculateRoute(start, finish, color, waypoints, icon, icon_start, icon_finish);
+    });
 }
+function calculateRoute(mapOrigin, mapDestination, color, waypoints, icon, icon_start, icon_finish, markerIconUrl) {
+    let request = {
+        origin: mapOrigin,
+        destination: mapDestination,
+        waypoints: waypoints,
+        travelMode: 'DRIVING',
+    };
+
+    // Call the directions service
+    new google.maps.DirectionsService().route(request, function (result, status) {
+        if (status == "OK") {
+            let directionsDisplay = new google.maps.DirectionsRenderer({
+                map: map,
+                suppressMarkers: true,
+                polylineOptions: {
+                    strokeColor: color, // this is declared at the bottom
+                    strokeWeight: 4,
+                    strokeOpacity: 1
+                },
+                preserveViewport: true
+            });
+            directionsDisplay.setDirections(result);
+
+            // Add a marker for the start of the route
+            new google.maps.Marker({
+                position: result.routes[0].legs[0].start_location,
+                map: map,
+                icon: icon_start.url ? {
+                    url: icon_start.url, // Use icon.url as the marker icon
+                    scaledSize: new google.maps.Size(50, 50) // Change the size of the icon
+                } : {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 10
+                }
+            });
+
+
+            // Add a marker for each waypoint
+            waypoints.forEach(waypoint => {
+                new google.maps.Marker({
+                    position: new google.maps.LatLng(parseFloat(waypoint.location.split(", ")[0]), parseFloat(waypoint.location.split(", ")[1])),
+                    map: map,
+                    icon: icon.url ? {
+                        url: icon.url, // Use icon.url as the marker icon
+                        scaledSize: new google.maps.Size(50, 50) // Change the size of the icon
+                    } : {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 10
+                    }
+
+                });
+            });
+
+            // Add a marker for the end of the route
+            new google.maps.Marker({
+                position: result.routes[0].legs[result.routes[0].legs.length - 1].end_location,
+                map: map,
+                icon: icon_finish.url ? {
+                    url: icon_finish.url, // Use icon.url as the marker icon
+                    scaledSize: new google.maps.Size(50, 50) // Change the size of the icon
+                } : {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 10
+                }
+            });
+        }
+    });
+}
+
+
+
+
 function haversineDistance(coords1, coords2) {
     function toRad(x) {
         return x * Math.PI / 180;
@@ -136,11 +139,13 @@ function haversineDistance(coords1, coords2) {
 }
 
 document.getElementById('location-form').addEventListener('submit', function (event) {
-    function setMapCenter(map, latLng) {
-        map.setCenter(latLng);
-    }
+    // Prevent the form from submitting normally
     event.preventDefault();
+
+    // Get the user's location from the form
     var userLocation = document.getElementById('user-location').value;
+
+    // Geocode the user's location
     var geocoder = new google.maps.Geocoder();
     geocoder.geocode({ 'address': userLocation }, function (results, status) {
         if (status == 'OK') {
@@ -148,44 +153,39 @@ document.getElementById('location-form').addEventListener('submit', function (ev
                 lat: results[0].geometry.location.lat(),
                 lng: results[0].geometry.location.lng()
             };
-            // Red Route Waypoints
-            let waypoints = busRoute1Stops.map(stop => {
-                return {
-                    location: `${stop.lat}, ${stop.lng}`,
-                    stopover: true
-                };
-            });
-            // Blue Route Waypoints
-            let waypoints2 = busRoute2Stops.map(stop => {
-                return {
-                    location: `${stop.lat}, ${stop.lng}`,
-                    stopover: true
-                };
-            });
-            console.log('userCoords:', userCoords);
-            var closestWaypoint = findClosestWaypoint(userCoords, waypoints, waypoints2);
-            // Log the closestWaypoint object
-            console.log('closestWaypoint:', closestWaypoint);
-            if (closestWaypoint && closestWaypoint.location) {
-                var [lat, lng] = closestWaypoint.location.split(',').map(Number);
-                if (typeof lat === 'number' && typeof lng === 'number') {
-                    var waypointLatLng = new google.maps.LatLng(lat, lng);
-                    setMapCenter(map, waypointLatLng);
-                    map.setZoom(16);
-                } else {
-                    console.error('Invalid coordinates:', closestWaypoint);
-                }
-            } else {
-                console.error('No closest waypoint found');
-            }
 
+            // Iterate over the routes and find the closest waypoint for each one
+            routesData.forEach(route => {
+                let waypoints = route.stops.map(stop => {
+                    return {
+                        location: `${stop.lat}, ${stop.lng}`,
+                        stopover: true
+                    };
+                });
+
+                var closestWaypoint = findClosestWaypoint(userCoords, waypoints);
+                // Log the closestWaypoint object
+                console.log('closestWaypoint:', closestWaypoint);
+                if (closestWaypoint && closestWaypoint.location) {
+                    var [lat, lng] = closestWaypoint.location.split(',').map(Number);
+                    if (typeof lat === 'number' && typeof lng === 'number') {
+                        var waypointLatLng = new google.maps.LatLng(lat, lng);
+                        map.setCenter(waypointLatLng);
+                        map.setZoom(16);
+                    } else {
+                        console.error('Invalid coordinates:', closestWaypoint);
+                    }
+                } else {
+                    console.error('No closest waypoint found');
+                }
+            });
         } else {
             alert('Geocode was not successful for the following reason: ' + status);
         }
     });
 });
-function findClosestWaypoint(userCoords, waypoints, waypoints2) {
-    var allWaypoints = waypoints.concat(waypoints2);
+function findClosestWaypoint(userCoords, waypoints) {
+    var allWaypoints = waypoints.concat(waypoints);
     var closestWaypoint;
     var shortestDistance;
     allWaypoints.forEach(function (waypoint) {

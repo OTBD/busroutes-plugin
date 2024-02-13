@@ -67,6 +67,38 @@ add_filter('acf/fields/google_map/api', 'my_acf_google_map_api');
     $bus_route_1_stops = get_bus_route_stops('bus_route_1_stops');
     $bus_route_2_stops = get_bus_route_stops('bus_route_2_stops');
 
+    $routes = [];
+    if (have_rows('routes','options')) {
+        while (have_rows('routes','options')) {
+            the_row();
+
+            $start = get_sub_field('start');
+            $finish = get_sub_field('finish');
+            $color = get_sub_field('color');
+            $icon = get_sub_field('icon');
+            $icon_start = get_sub_field('icon_start');
+            $icon_finish = get_sub_field('icon_finish');
+
+            $stops = [];
+            if (have_rows('stops')) {
+                while (have_rows('stops')) {
+                    the_row();
+                    $stops[] = get_sub_field('stop');
+                }
+            }
+
+            $routes[] = [
+                'start' => $start,
+                'finish' => $finish,
+                'color' => $color,
+                'icon' => $icon,
+                'icon_start' => $icon_start,
+                'icon_finish' => $icon_finish,
+                'stops' => $stops
+            ];
+        }
+    }
+
     function get_location($field_name) {
         $location = get_field($field_name, 'option');
         return array(
@@ -75,21 +107,14 @@ add_filter('acf/fields/google_map/api', 'my_acf_google_map_api');
         );
     }
 
-    
-    $bsr1start = get_location('bus_route_1_start');
-    $bsr1finish = get_location('bus_route_1_finish');
-    $bsr2start = get_location('bus_route_2_start');
-    $bsr2finish = get_location('bus_route_2_finish');
+    // Assuming 'my-script' is the handle for your script
+    wp_localize_script('busroutes', 'routesData', $routes);
+
+
     $map_center = get_location('map_center');
     $zoom_level = get_field('zoom_level', 'option');
 
     wp_localize_script('busroutes', 'mapPosCenter', $map_center);
-    wp_localize_script('busroutes', 'bsr1start', $bsr1start);
-    wp_localize_script('busroutes', 'bsr1finish', $bsr1finish);
-    wp_localize_script('busroutes', 'bsr2start', $bsr2start);
-    wp_localize_script('busroutes', 'bsr2finish', $bsr2finish);
-    wp_localize_script('busroutes', 'busRoute1Stops', $bus_route_1_stops);
-    wp_localize_script('busroutes', 'busRoute2Stops', $bus_route_2_stops);
     wp_localize_script('busroutes', 'mapData', array('zoomLevel' => $zoom_level));
 
 
@@ -147,7 +172,7 @@ if(function_exists('acf_add_local_field_group')) {
         'title' => 'Plugin',
         'fields' => array(
             array(
-                'key' => 'field_65c93c744441a',
+                'key' => 'field_65ca7f3673adb',
                 'label' => 'Settings',
                 'name' => '',
                 'aria-label' => '',
@@ -164,16 +189,16 @@ if(function_exists('acf_add_local_field_group')) {
                 'endpoint' => 0,
             ),
             array(
-                'key' => 'field_65c93c8c4441b',
-                'label' => 'Api Key',
-                'name' => 'my_map_plugin_api_key',
+                'key' => 'field_65ca7f2873ada',
+                'label' => 'API Key',
+                'name' => 'api_key',
                 'aria-label' => '',
                 'type' => 'text',
-                'instructions' => '',
+                'instructions' => 'Get the api key from google dev tools',
                 'required' => 0,
                 'conditional_logic' => 0,
                 'wrapper' => array(
-                    'width' => '',
+                    'width' => '80',
                     'class' => '',
                     'id' => '',
                 ),
@@ -184,31 +209,12 @@ if(function_exists('acf_add_local_field_group')) {
                 'append' => '',
             ),
             array(
-                'key' => 'field_65c93ca14441c',
-                'label' => 'Map Center',
-                'name' => 'map_center',
-                'aria-label' => '',
-                'type' => 'google_map',
-                'instructions' => 'This will create the centre location for your map.',
-                'required' => 0,
-                'conditional_logic' => 0,
-                'wrapper' => array(
-                    'width' => '80',
-                    'class' => '',
-                    'id' => '',
-                ),
-                'center_lat' => '',
-                'center_lng' => '',
-                'zoom' => '',
-                'height' => '',
-            ),
-            array(
-                'key' => 'field_65c93cd24441d',
+                'key' => 'field_65ca7f3f73adc',
                 'label' => 'Zoom Level',
                 'name' => 'zoom_level',
                 'aria-label' => '',
                 'type' => 'number',
-                'instructions' => '0 - 19',
+                'instructions' => '0-19',
                 'required' => 0,
                 'conditional_logic' => 0,
                 'wrapper' => array(
@@ -225,8 +231,27 @@ if(function_exists('acf_add_local_field_group')) {
                 'append' => '',
             ),
             array(
-                'key' => 'field_65c93d29139d8',
-                'label' => 'Bus Route 1',
+                'key' => 'field_65ca7f88907a2',
+                'label' => 'Map Center',
+                'name' => 'map_center',
+                'aria-label' => '',
+                'type' => 'google_map',
+                'instructions' => '',
+                'required' => 0,
+                'conditional_logic' => 0,
+                'wrapper' => array(
+                    'width' => '',
+                    'class' => '',
+                    'id' => '',
+                ),
+                'center_lat' => '',
+                'center_lng' => '',
+                'zoom' => '',
+                'height' => '',
+            ),
+            array(
+                'key' => 'field_65ca7f9a245bd',
+                'label' => 'Bus Routes',
                 'name' => '',
                 'aria-label' => '',
                 'type' => 'tab',
@@ -242,28 +267,9 @@ if(function_exists('acf_add_local_field_group')) {
                 'endpoint' => 0,
             ),
             array(
-                'key' => 'field_65c93dd283e07',
-                'label' => 'Bus Route 1 Start',
-                'name' => 'bus_route_1_start',
-                'aria-label' => '',
-                'type' => 'google_map',
-                'instructions' => '',
-                'required' => 0,
-                'conditional_logic' => 0,
-                'wrapper' => array(
-                    'width' => '',
-                    'class' => '',
-                    'id' => '',
-                ),
-                'center_lat' => '',
-                'center_lng' => '',
-                'zoom' => '',
-                'height' => '',
-            ),
-            array(
-                'key' => 'field_65c93d34139d9',
-                'label' => 'Bus Route 1 Stops',
-                'name' => 'bus_route_1_stops',
+                'key' => 'field_65ca7fa4245be',
+                'label' => 'Routes',
+                'name' => 'routes',
                 'aria-label' => '',
                 'type' => 'repeater',
                 'instructions' => '',
@@ -274,7 +280,7 @@ if(function_exists('acf_add_local_field_group')) {
                     'class' => '',
                     'id' => '',
                 ),
-                'layout' => 'table',
+                'layout' => 'block',
                 'pagination' => 0,
                 'min' => 0,
                 'max' => 0,
@@ -283,11 +289,11 @@ if(function_exists('acf_add_local_field_group')) {
                 'rows_per_page' => 20,
                 'sub_fields' => array(
                     array(
-                        'key' => 'field_65c93db0c801c',
-                        'label' => 'Lat',
-                        'name' => 'lat',
+                        'key' => 'field_65ca7fb7245bf',
+                        'label' => 'Start',
+                        'name' => 'start',
                         'aria-label' => '',
-                        'type' => 'text',
+                        'type' => 'google_map',
                         'instructions' => '',
                         'required' => 0,
                         'conditional_logic' => 0,
@@ -296,19 +302,18 @@ if(function_exists('acf_add_local_field_group')) {
                             'class' => '',
                             'id' => '',
                         ),
-                        'default_value' => '',
-                        'maxlength' => '',
-                        'placeholder' => '',
-                        'prepend' => '',
-                        'append' => '',
-                        'parent_repeater' => 'field_65c93d34139d9',
+                        'center_lat' => '',
+                        'center_lng' => '',
+                        'zoom' => '',
+                        'height' => '',
+                        'parent_repeater' => 'field_65ca7fa4245be',
                     ),
                     array(
-                        'key' => 'field_65c93dbec801d',
-                        'label' => 'Lng',
-                        'name' => 'lng',
+                        'key' => 'field_65ca7fc5245c0',
+                        'label' => 'Finish',
+                        'name' => 'finish',
                         'aria-label' => '',
-                        'type' => 'text',
+                        'type' => 'google_map',
                         'instructions' => '',
                         'required' => 0,
                         'conditional_logic' => 0,
@@ -317,119 +322,63 @@ if(function_exists('acf_add_local_field_group')) {
                             'class' => '',
                             'id' => '',
                         ),
-                        'default_value' => '',
-                        'maxlength' => '',
-                        'placeholder' => '',
-                        'prepend' => '',
-                        'append' => '',
-                        'parent_repeater' => 'field_65c93d34139d9',
-                    ),
-                ),
-            ),
-            array(
-                'key' => 'field_65c93de683e08',
-                'label' => 'Bus Route 1 Finish',
-                'name' => 'bus_route_1_finish',
-                'aria-label' => '',
-                'type' => 'google_map',
-                'instructions' => '',
-                'required' => 0,
-                'conditional_logic' => 0,
-                'wrapper' => array(
-                    'width' => '',
-                    'class' => '',
-                    'id' => '',
-                ),
-                'center_lat' => '',
-                'center_lng' => '',
-                'zoom' => '',
-                'height' => '',
-            ),
-            array(
-                'key' => 'field_65c93fbbabf02',
-                'label' => 'Bus Route 2',
-                'name' => '',
-                'aria-label' => '',
-                'type' => 'tab',
-                'instructions' => '',
-                'required' => 0,
-                'conditional_logic' => 0,
-                'wrapper' => array(
-                    'width' => '',
-                    'class' => '',
-                    'id' => '',
-                ),
-                'placement' => 'top',
-                'endpoint' => 0,
-            ),
-            array(
-                'key' => 'field_65c93fc9abf03',
-                'label' => 'Bus Route 2 Start',
-                'name' => 'bus_route_2_start',
-                'aria-label' => '',
-                'type' => 'google_map',
-                'instructions' => '',
-                'required' => 0,
-                'conditional_logic' => 0,
-                'wrapper' => array(
-                    'width' => '',
-                    'class' => '',
-                    'id' => '',
-                ),
-                'center_lat' => '',
-                'center_lng' => '',
-                'zoom' => '',
-                'height' => '',
-            ),
-            array(
-                'key' => 'field_65c93fd7abf04',
-                'label' => 'Bus Route 2 Stops',
-                'name' => 'bus_route_2_stops',
-                'aria-label' => '',
-                'type' => 'repeater',
-                'instructions' => '',
-                'required' => 0,
-                'conditional_logic' => 0,
-                'wrapper' => array(
-                    'width' => '',
-                    'class' => '',
-                    'id' => '',
-                ),
-                'layout' => 'table',
-                'pagination' => 0,
-                'min' => 0,
-                'max' => 0,
-                'collapsed' => '',
-                'button_label' => 'Add Row',
-                'rows_per_page' => 20,
-                'sub_fields' => array(
-                    array(
-                        'key' => 'field_65c93fd7abf05',
-                        'label' => 'Lat',
-                        'name' => 'lat',
-                        'aria-label' => '',
-                        'type' => 'text',
-                        'instructions' => '',
-                        'required' => 0,
-                        'conditional_logic' => 0,
-                        'wrapper' => array(
-                            'width' => '50',
-                            'class' => '',
-                            'id' => '',
-                        ),
-                        'default_value' => '',
-                        'maxlength' => '',
-                        'placeholder' => '',
-                        'prepend' => '',
-                        'append' => '',
-                        'parent_repeater' => 'field_65c93fd7abf04',
+                        'center_lat' => '',
+                        'center_lng' => '',
+                        'zoom' => '',
+                        'height' => '',
+                        'parent_repeater' => 'field_65ca7fa4245be',
                     ),
                     array(
-                        'key' => 'field_65c93fd7abf06',
-                        'label' => 'Lng',
-                        'name' => 'lng',
+                        'key' => 'field_65ca7fe1245c1',
+                        'label' => 'Stops',
+                        'name' => 'stops',
                         'aria-label' => '',
-                        'type' => 'text',
+                        'type' => 'repeater',
+                        'instructions' => '',
+                        'required' => 0,
+                        'conditional_logic' => 0,
+                        'wrapper' => array(
+                            'width' => '',
+                            'class' => '',
+                            'id' => '',
+                        ),
+                        'layout' => 'table',
+                        'pagination' => 0,
+                        'min' => 0,
+                        'max' => 0,
+                        'collapsed' => '',
+                        'button_label' => 'Add Row',
+                        'rows_per_page' => 20,
+                        'sub_fields' => array(
+                            array(
+                                'key' => 'field_65ca7ff9245c2',
+                                'label' => 'Stop',
+                                'name' => 'stop',
+                                'aria-label' => '',
+                                'type' => 'google_map',
+                                'instructions' => '',
+                                'required' => 0,
+                                'conditional_logic' => 0,
+                                'wrapper' => array(
+                                    'width' => '',
+                                    'class' => '',
+                                    'id' => '',
+                                ),
+                                'center_lat' => '',
+                                'center_lng' => '',
+                                'zoom' => '',
+                                'height' => '',
+                                'parent_repeater' => 'field_65ca7fe1245c1',
+                            ),
+                        ),
+                        'parent_repeater' => 'field_65ca7fa4245be',
+                    ),
+                    array(
+                        'key' => 'field_65ca8008245c3',
+                        'label' => 'Color',
+                        'name' => 'color',
+                        'aria-label' => '',
+                        'type' => 'color_picker',
                         'instructions' => '',
                         'required' => 0,
                         'conditional_logic' => 0,
@@ -439,35 +388,91 @@ if(function_exists('acf_add_local_field_group')) {
                             'id' => '',
                         ),
                         'default_value' => '',
-                        'maxlength' => '',
-                        'placeholder' => '',
-                        'prepend' => '',
-                        'append' => '',
-                        'parent_repeater' => 'field_65c93fd7abf04',
+                        'enable_opacity' => 0,
+                        'return_format' => 'string',
+                        'parent_repeater' => 'field_65ca7fa4245be',
+                    ),
+                    array(
+                        'key' => 'field_65cbd39c62511',
+                        'label' => 'Icon Start',
+                        'name' => 'icon_start',
+                        'aria-label' => '',
+                        'type' => 'image',
+                        'instructions' => '',
+                        'required' => 0,
+                        'conditional_logic' => 0,
+                        'wrapper' => array(
+                            'width' => '16.66',
+                            'class' => '',
+                            'id' => '',
+                        ),
+                        'return_format' => 'array',
+                        'library' => 'all',
+                        'min_width' => '',
+                        'min_height' => '',
+                        'min_size' => '',
+                        'max_width' => '',
+                        'max_height' => '',
+                        'max_size' => '',
+                        'mime_types' => '',
+                        'preview_size' => 'medium',
+                        'parent_repeater' => 'field_65ca7fa4245be',
+                    ),
+                    array(
+                        'key' => 'field_65ca8018245c4',
+                        'label' => 'Icon',
+                        'name' => 'icon',
+                        'aria-label' => '',
+                        'type' => 'image',
+                        'instructions' => '',
+                        'required' => 0,
+                        'conditional_logic' => 0,
+                        'wrapper' => array(
+                            'width' => '16.66',
+                            'class' => '',
+                            'id' => '',
+                        ),
+                        'return_format' => 'array',
+                        'library' => 'all',
+                        'min_width' => '',
+                        'min_height' => '',
+                        'min_size' => '',
+                        'max_width' => '',
+                        'max_height' => '',
+                        'max_size' => '',
+                        'mime_types' => '',
+                        'preview_size' => 'medium',
+                        'parent_repeater' => 'field_65ca7fa4245be',
+                    ),
+                    array(
+                        'key' => 'field_65cbd3a762512',
+                        'label' => 'Icon Finish',
+                        'name' => 'icon_finish',
+                        'aria-label' => '',
+                        'type' => 'image',
+                        'instructions' => '',
+                        'required' => 0,
+                        'conditional_logic' => 0,
+                        'wrapper' => array(
+                            'width' => '16.66',
+                            'class' => '',
+                            'id' => '',
+                        ),
+                        'return_format' => 'array',
+                        'library' => 'all',
+                        'min_width' => '',
+                        'min_height' => '',
+                        'min_size' => '',
+                        'max_width' => '',
+                        'max_height' => '',
+                        'max_size' => '',
+                        'mime_types' => '',
+                        'preview_size' => 'medium',
+                        'parent_repeater' => 'field_65ca7fa4245be',
                     ),
                 ),
-            ),
-            array(
-                'key' => 'field_65c93fe6abf07',
-                'label' => 'Bus Route 2 Finish',
-                'name' => 'bus_route_2_finish',
-                'aria-label' => '',
-                'type' => 'google_map',
-                'instructions' => '',
-                'required' => 0,
-                'conditional_logic' => 0,
-                'wrapper' => array(
-                    'width' => '',
-                    'class' => '',
-                    'id' => '',
-                ),
-                'center_lat' => '',
-                'center_lng' => '',
-                'zoom' => '',
-                'height' => '',
             ),
         ),
-    
         'location' => array(
             array(
                 array(
