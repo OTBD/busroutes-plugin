@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Bus Routes
  * Description: A googlemaps feature that creates a list of bus routes.
- * Version: 1.0
+ * Version: 1.0.1
  * Author: Owen Dawson
  */
 
